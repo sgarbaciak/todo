@@ -25,7 +25,7 @@ The following **optional** features are implemented:
 
 The following **additional** features are implemented:
 
-* [ ] Add custom launcher icon
+* [x] Add custom launcher icon
 
 ## Video Walkthrough 
 
@@ -36,7 +36,7 @@ Here's a walkthrough of implemented user stories:
 GIF created with [LiceCap](http://www.cockos.com/licecap/).
 
 ## Notes
-
+adde
 Learned a lot of new stuff (DBFlow, , CustomAdapters, Intents ...).
 
 ## License
