@@ -2,6 +2,8 @@
     <string name="app_name">TODOic</string>
     <string name="add">Add</string>
     <string name="add_item">Add a new item...</string>
-    <string name="edit_item">Edit item below:</string>
+    <string name="edit_item">Task</string>
     <string name="save">Save</string>
+    <string name="due_date">Due date</string>
+    <string name="priority">Priority</string>
 </resources>

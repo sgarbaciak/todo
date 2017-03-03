@@ -1,33 +1,30 @@
 package com.garbaciak.todoic;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
 
-import org.apache.commons.io.FileUtils;
+import com.raizlabs.android.dbflow.sql.language.SQLite;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String EMPTY_TEXT = "";
-    private static final String PARAM_TEXT = "text";
-    private static final String PARAM_POSITION = "position";
-    private static final String TODO_FILE = "todo.txt";
+    public static final String PARAM_ID = "id";
+    public static final String PARAM_TEXT = "text";
+    public static final String PARAM_PRIORITY = "priority";
+    public static final String PARAM_DUE_DATE = "due_date";
+    public static final String PARAM_POSITION = "position";
 
     private final int REQUEST_CODE = 20;
 
-    ArrayList<String> todoItems;
-    ArrayAdapter<String> aTodDoAdapter;
+    ArrayList<Task> todoItems;
+    TaskAdapter aTodDoAdapter;
     ListView lvItems;
-    EditText etText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
         populateArrayItems();
         lvItems = (ListView) findViewById(R.id.lvItems);
         lvItems.setAdapter(aTodDoAdapter);
-        etText = (EditText) findViewById(R.id.etEditText);
 
         lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
@@ -55,76 +51,70 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void removeItem(int position) {
-        todoItems.remove(position);
-        aTodDoAdapter.notifyDataSetChanged();
-        writeItems();
+        todoItems.get(position).delete();
+//        todoItems.remove(position);
+//        aTodDoAdapter.notifyDataSetChanged();
+        updateTodoList();
     }
 
-    private void saveItem(int position, String text) {
-        todoItems.set(position, text);
-        aTodDoAdapter.notifyDataSetChanged();
-        writeItems();
-    }
 
     public void populateArrayItems() {
-        readItems();
-        aTodDoAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, todoItems);
+        todoItems = new ArrayList<>(SQLite.select().
+                from(Task.class).queryList());
+        aTodDoAdapter = new TaskAdapter(this, todoItems);
     }
 
-    private void readItems() {
-        File filesDir = getFilesDir();
-        File file = new File(filesDir, TODO_FILE);
-        if (!file.exists()) {
-            createNewFile(file);
-        }
-
-        try {
-            todoItems = new ArrayList<>(FileUtils.readLines(file));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void updateTodoList() {
+        todoItems.clear();
+        todoItems.addAll(new ArrayList<>(SQLite.select().
+                from(Task.class).queryList()));
+        aTodDoAdapter.notifyDataSetChanged();
     }
 
-    private void createNewFile(File file) {
-        try {
-            file.createNewFile();
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
-    }
+    public void launchEditView(Task task, int position) {
 
-    private void writeItems() {
-        File filesDir = getFilesDir();
-        File file = new File(filesDir, "todo.txt");
-        try {
-           FileUtils.writeLines(file, todoItems);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void launchEditView(String todoText, int position) {
-
-        Intent i = new Intent(MainActivity.this, EditItemActivity.class);
-        i.putExtra(PARAM_TEXT, todoText);
+        Intent i = new Intent(MainActivity.this, ItemActivity.class);
         i.putExtra(PARAM_POSITION, position);
+        i.putExtra(PARAM_ID, task.id);
+        i.putExtra(PARAM_TEXT, task.text);
+        i.putExtra(PARAM_DUE_DATE, task.dueDate);
+        i.putExtra(PARAM_PRIORITY, task.priority);
 
         startActivityForResult(i, REQUEST_CODE);
     }
 
     public void onAddItem(View view) {
-        aTodDoAdapter.add(etText.getText().toString());
-        etText.setText(EMPTY_TEXT);
-        writeItems();
+
+//        Task task = new Task();
+//        task.text = etText.getText().toString();
+//        task.dueDate = new Date();
+//        task.priority= Priority.HIGH;
+//        task.save();
+
+//        aTodDoAdapter.add(task);
+//        etText.setText(EMPTY_TEXT);
+        launchEditView(new Task(), -1);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
 
-            String text = data.getExtras().getString(PARAM_TEXT);
-            int position = data.getExtras().getInt(PARAM_POSITION, 0);
-            saveItem(position, text);
+            int position = data.getIntExtra(PARAM_POSITION, 0);
+            Task task;
+            if (position == -1) {
+                task = new Task();
+            } else {
+                task = todoItems.get(position);
+            }
+//            task.id = getIntent().getIntExtra(MainActivity.PARAM_ID, 0);
+            task.text = data.getStringExtra(PARAM_TEXT);
+            task.dueDate = (Date)data.getSerializableExtra(PARAM_DUE_DATE);
+            task.priority= (Priority)data.getSerializableExtra(PARAM_PRIORITY);
+
+            task.save();
+
+            updateTodoList();
         }
     }
 }
